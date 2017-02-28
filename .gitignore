@@ -1,5 +1,7 @@
 # Data
 MNIST_data
+*.csv
+tmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
