@@ -12,6 +12,15 @@ import os  # NOQA
 import sys  # NOQA
 sys.path.append(os.getcwd())
 
+# Models and stuff
+click.secho('>>> import util',
+            fg='white')
+import util  # NOQA
+
+click.secho('>>> import models',
+            fg='white')
+import models  # NOQA
+
 # Tensorflow
 click.secho('>>> import tensorflow as tf',
             fg='white')
@@ -31,6 +40,10 @@ click.secho('>>> sess = tf.InteractiveSession()',
 sess = tf.InteractiveSession()
 
 # Other
+click.secho('>>> from sklearn import preprocessing',
+            fg='white')
+from sklearn import preprocessing  # NOQA
+
 click.secho('>>> import numpy as np',
             fg='white')
 import numpy as np  # NOQA
@@ -45,37 +58,12 @@ import collections
 Dataset = collections.namedtuple('Dataset', ['data', 'target'])
 
 # Data
-
-
-def import_data(filename):
-    """ Example of how to save
-    with gzip.open(filename, 'wb') as f:
-        cPickle.dump(obj, f, -1)
-    """
-    import cPickle
-    import gzip
-    with gzip.open(filename, 'rb') as f:
-        return cPickle.load(f)
-
-training = import_data('training.pklz')
-data = training[:, :-1]
-target = training[:, -1]
-test_size = 500
+train_set, test_set = util.train_test_set()
 hidden_units = [10, 20, 10]
 n_classes = 2
 model_dir = "tmp/numerai"
-training_set = Dataset(data=data[0:-test_size],
-                       target=target[0:-test_size])
-test_set = Dataset(data=data[-test_size:],
-                   target=target[-test_size:])
 
-prediction = import_data('prediction.pklz')
-prediction_set = prediction[:, 1:]
-preds = prediction_set[0:19]
-tid_set = prediction[:, 0]
-
-
-num_features = training_set.data.shape[1]
+num_features = train_set.data.shape[1]
 FEATURES = ['feature-{}'.format(i+1) for i in range(num_features)]
 LABEL = 'target'
 COLUMNS = FEATURES + [LABEL]
@@ -84,8 +72,8 @@ feature_columns = [tf.contrib.layers.real_valued_column(k)
 feature_cols = feature_columns
 
 training_frame_data = np.append(
-    training_set.data,
-    training_set.target.reshape(training_set.data.shape[0], 1),
+    train_set.data,
+    train_set.target.reshape(train_set.data.shape[0], 1),
     axis=1)
 
 test_frame_data = np.append(
@@ -126,34 +114,27 @@ def input_fn(data_set):
     return feature_cols, labels
 
 
-classifier = example_classifier()
+# classifier = example_classifier()
 
 
-def fi(frame, steps=0):
-    classifier.fit(input_fn=lambda: input_fn(frame), steps=steps)
+# def fi(frame, steps=0):
+#     classifier.fit(input_fn=lambda: input_fn(frame), steps=steps)
 
 
-def ev(frame, steps=1):
-    classifier.evaluate(input_fn=lambda: input_fn(frame), steps=steps)
-
-
-def quickstart(steps=0):
-    classifier = tf.contrib.learn.DNNClassifier(
-        feature_columns=feature_columns,
-        hidden_units=hidden_units,
-        n_classes=n_classes,
-        model_dir=model_dir)
-    classifier.fit(
-        x=training_set.data,
-        y=training_set.target,
-        steps=steps)
-    evaluation = classifier.evaluate(
-        x=test_set.data,
-        y=test_set.target)
-    return classifier, evaluation
-
+# def ev(frame, steps=1):
+#     return classifier.evaluate(input_fn=lambda: input_fn(frame), steps=steps)
 
 # Testing
+
+def import_data(filename):
+    """ Example of how to save
+    with gzip.open(filename, 'wb') as f:
+        cPickle.dump(obj, f, -1)
+    """
+    import cPickle
+    import gzip
+    with gzip.open(filename, 'rb') as f:
+        return cPickle.load(f)
 
 
 def weight_variable(shape):
