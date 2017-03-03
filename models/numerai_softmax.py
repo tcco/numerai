@@ -5,31 +5,29 @@ from __future__ import print_function
 import argparse
 import sys
 import os
+import numpy as np
 sys.path.append(os.getcwd())
 import tensorflow as tf
 import util
 from random import randint
 
 
-def main(_):
-    train_set, test_set = util.train_test_set()
+FLAGS = None
 
-    features = train_set.data.shape[1]
-    outputs = 2
-    train_data_set = util.Dataset(
-        train_set.data,
-        targets=train_set.target)
-    test_data_set = util.Dataset(
-        test_set.data,
-        targets=test_set.target)
+
+def main(_):
+    datasets = util.numerai_datasets()
+    features = datasets.features
+    classes = datasets.classes
+
     print('Extracted train and test sets, building model...')
     # Softmax Model
     x = tf.placeholder(tf.float32, shape=[None, features])
-    W = tf.Variable(tf.zeros([features, outputs]))
-    b = tf.Variable(tf.zeros([outputs]))
+    W = tf.Variable(tf.zeros([features, classes]))
+    b = tf.Variable(tf.zeros([classes]))
     y = tf.matmul(x, W) + b
     # Loss
-    y_ = tf.placeholder(tf.float32, [None, outputs])
+    y_ = tf.placeholder(tf.float32, [None, classes])
 
     # Cross Entropy
     print('Analyzing based on cross entropy...')
@@ -44,10 +42,10 @@ def main(_):
     # Train
     print('Training...')
     index = 0
-    batch_size = 300
-    for _ in range(1000):
+    batch_size = FLAGS.batch_size
+    for _ in range(FLAGS.max_steps):
         index = _ * batch_size
-        batch_xs, batch_ys = train_data_set.next_batch(batch_size)
+        batch_xs, batch_ys = datasets.train.next_batch(batch_size)
         sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
         if _ % 100 == 0:
             print(' Training Step: {} \n Index: {}'.format(_, index))
@@ -58,20 +56,34 @@ def main(_):
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     print('Accuracy on test set')
-    print(sess.run(accuracy, feed_dict={x: test_data_set.data,
-                                        y_: test_data_set.labels}))
+    print(sess.run(accuracy, feed_dict={x: datasets.test.data,
+                                        y_: datasets.test.labels}))
 
-    end = randint(10, test_set.data.shape[0])
+    end = randint(10, datasets.test.data.shape[0])
     beg = end - 10
     print('Testing on random image (indices {}-{}) from test set...'.format(beg, end))
-    feed_dict = {x: test_set.data[beg:end]}
-    classification = sess.run(tf.argmax(y, 1), feed_dict=feed_dict)
-    print(classification)
+    feed_dict = {x: datasets.test.data[beg:end]}
+    print(sess.run(tf.argmax(y, 1), feed_dict=feed_dict))
+    print('Testing on ONE random image (indice {}) from test set...'.format(beg))
+    a = tf.constant(np.array(datasets.test.data[beg]))
+    print(sess.run(tf.nn.softmax(a)))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default=util.DATA_DIR,
+    parser.add_argument('--data_dir', type=str, default=util.NUMERAI_SOFTMAX,
                         help='Directory for storing input data.')
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=500,
+        help='Size of batches, try to divide evenly into dataset sizes.'
+    )
+    parser.add_argument(
+        '--max_steps',
+        type=int,
+        default=1000,
+        help='Numer of steps to run trainer.'
+    )
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

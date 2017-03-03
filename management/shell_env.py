@@ -31,9 +31,9 @@ click.secho('>>> from tensorflow.examples.tutorials.mnist import input_data',
             fg='white')
 from tensorflow.examples.tutorials.mnist import input_data  # NOQA
 
-click.secho('>>> mnist = input_data.read_data_sets(MNIST_DATA, one_hot=True)',
+click.secho('>>> mnist = input_data.read_data_sets(data/MNIST_DATA, one_hot=True)',
             fg='white')
-mnist = input_data.read_data_sets('MNIST_DATA', one_hot=True)  # NOQA
+mnist = input_data.read_data_sets('data/MNIST_DATA', one_hot=True)  # NOQA
 
 click.secho('>>> sess = tf.InteractiveSession()',
             fg='white')
@@ -61,7 +61,7 @@ Dataset = collections.namedtuple('Dataset', ['data', 'target'])
 train_set, test_set = util.train_test_set()
 hidden_units = [10, 20, 10]
 n_classes = 2
-model_dir = "tmp/numerai"
+model_dir = "data/numerai/shell"
 
 num_features = train_set.data.shape[1]
 FEATURES = ['feature-{}'.format(i+1) for i in range(num_features)]

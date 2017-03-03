@@ -2,6 +2,8 @@
 MNIST_data
 *.csv
 tmp
+data/mnist
+data/numerai
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
