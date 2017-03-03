@@ -22,11 +22,17 @@ def training_data():
     return import_data('data/training.pklz')
 
 
-def train_test_set(preprocess=False,
+def train_test_set(preprocess=True,
                    test_percentage=.2):
     training = training_data()
     if preprocess:
-        data = preprocessing.scale(training[:, :-1])
+        ############# Range
+        min_max_scaler = preprocessing.MinMaxScaler()
+        data = min_max_scaler.fit_transform(training[:, :-1])
+        ############# Standardize
+        # data = preprocessing.scale(training[:, :-1])
+        ############# Normalize
+        # data = preprocessing.normalize(training[:, :-1], norm='l2')
     else:
         data = training[:, :-1]
     target = training[:, -1]
@@ -43,7 +49,13 @@ def train_test_set(preprocess=False,
 def train_set(preprocess=True):
     training = training_data()
     if preprocess:
-        data = preprocessing.scale(training[:, :-1])
+        ############# Range
+        min_max_scaler = preprocessing.MinMaxScaler()
+        data = min_max_scaler.fit_transform(training[:, :-1])
+        ############# Standardize
+        # data = preprocessing.scale(training[:, :-1])
+        ############# Normalize
+        # data = preprocessing.normalize(training[:, :-1], norm='l2')
     else:
         data = training[:, :-1]
     target = training[:, -1]

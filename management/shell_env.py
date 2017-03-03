@@ -85,6 +85,27 @@ training_frame = pd.DataFrame(training_frame_data, columns=COLUMNS)
 testing_frame = pd.DataFrame(test_frame_data, columns=COLUMNS)
 
 
+def restore(step, model_str='data/numerai/model.ckpt-'):
+    meta = model_str + step
+    saver = tf.train.import_meta_graph('{}.meta'.format(meta))
+    saver.restore(sess, meta)
+    graph = tf.get_default_graph()
+    ops = graph.get_operations()
+    names = []
+    for o in ops:
+        names.append(o.name)
+    return graph, names
+
+
+graph, names = restore('4478')
+accuracy = graph.get_operation_by_name('xentropy_mean').outputs[0]
+data_pl = graph.get_operation_by_name('data_pl').outputs[0]
+labels_pl = graph.get_operation_by_name('labels_pl').outputs[0]
+dim = data_pl.shape[0]
+feed_dict = {data_pl: test_set.data[0:dim], labels_pl: test_set.target[0:dim]}
+print(sess.run(accuracy, feed_dict=feed_dict))
+
+
 def example_classifier():
     classifier = tf.contrib.learn.DNNClassifier(
         feature_columns=feature_columns,

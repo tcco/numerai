@@ -74,6 +74,10 @@ def run_training():
 
         sess.run(init)
 
+        best_loss = 1.0
+        best_step = 0
+        how_many = 0
+
         print('Training...\n')
         for step in xrange(FLAGS.max_steps):
             start_time = time.time()
@@ -87,10 +91,15 @@ def run_training():
                                      feed_dict=feed_dict)
             duration = time.time() - start_time
 
+            if loss_value < best_loss:
+                best_loss = loss_value
+                best_step = step
+                how_many += 1
+
             # Write the summaries and print an overview fairly often.
             if step % 100 == 0:
                 # Print status to stdout.
-                print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                print('Step %d: loss = %.4f (%.5f sec)' % (step, loss_value, duration))
                 # Update the events file.
                 summary_str = sess.run(summary, feed_dict=feed_dict)
                 summary_writer.add_summary(summary_str, step)
@@ -117,6 +126,7 @@ def run_training():
                     labels_placeholder,
                     mnist.test,
                     FLAGS.batch_size)
+        print('How many best? %d Best loss value = %.4f at step %d' % (how_many, best_loss, best_step))
 
 
 def main(_):
@@ -167,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--log_dir',
         type=str,
-        default='data/mnist/fnn',
+        default='data/mnist',
         help='Directory to put the log data.'
     )
     parser.add_argument(

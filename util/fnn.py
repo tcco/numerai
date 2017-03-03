@@ -7,8 +7,8 @@ from tensorflow.python.framework import dtypes  # NOQA
 
 
 def placeholder_inputs(batch_size, num_features):
-	data_placeholder = tf.placeholder(tf.float32, shape=(batch_size, num_features))
-	labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
+	data_placeholder = tf.placeholder(tf.float32, shape=(batch_size, num_features), name='data_pl')
+	labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size), name='labels_pl')
 	return data_placeholder, labels_placeholder
 
 

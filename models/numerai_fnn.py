@@ -56,6 +56,10 @@ def run_training():
 
         sess.run(init)
 
+        best_loss = 1.0
+        best_step = 0
+        how_many = 0
+
         print('Training...\n')
         for step in xrange(FLAGS.max_steps):
             start_time = time.time()
@@ -69,10 +73,17 @@ def run_training():
                                      feed_dict=feed_dict)
             duration = time.time() - start_time
 
+            if loss_value < best_loss:
+                best_loss = loss_value
+                best_step = step
+                how_many += 1
+                checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
+                saver.save(sess, checkpoint_file, global_step=step)
+
             # Write the summaries and print an overview fairly often.
             if step % 100 == 0:
                 # Print status to stdout.
-                print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                print('Step %d: loss = %.4f (%.5f sec)' % (step, loss_value, duration))
                 # Update the events file.
                 summary_str = sess.run(summary, feed_dict=feed_dict)
                 summary_writer.add_summary(summary_str, step)
@@ -80,8 +91,8 @@ def run_training():
 
             # Save a checkpoint and evaluate the model periodically.
             if (step + 1) % 1000 == 0 or (step + 1) == FLAGS.max_steps:
-                checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
-                saver.save(sess, checkpoint_file, global_step=step)
+                # checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
+                # saver.save(sess, checkpoint_file, global_step=step)
                 # Evaluate against the training set.
                 print('Training Data Eval:')
                 util.do_eval(
@@ -99,6 +110,7 @@ def run_training():
                     labels_placeholder,
                     datasets.test,
                     FLAGS.batch_size)
+        print('How many best? %d Best loss value = %.4f at step %d' % (how_many, best_loss, best_step))
 
 
 def main(_):
@@ -143,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--log_dir',
         type=str,
-        default='data/numerai/fnn',
+        default='data/numerai',
         help='Directory to put the log data.'
     )
     FLAGS, unparsed = parser.parse_known_args()
