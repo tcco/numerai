@@ -57,33 +57,6 @@ click.secho('>>> Dataset = collections.namedtuple(Dataset, [data, target])',
 import collections
 Dataset = collections.namedtuple('Dataset', ['data', 'target'])
 
-# Data
-train_set, test_set = util.train_test_set()
-hidden_units = [10, 20, 10]
-n_classes = 2
-model_dir = "data/numerai/shell"
-
-num_features = train_set.data.shape[1]
-FEATURES = ['feature-{}'.format(i+1) for i in range(num_features)]
-LABEL = 'target'
-COLUMNS = FEATURES + [LABEL]
-feature_columns = [tf.contrib.layers.real_valued_column(k)
-                   for k in FEATURES]
-feature_cols = feature_columns
-
-training_frame_data = np.append(
-    train_set.data,
-    train_set.target.reshape(train_set.data.shape[0], 1),
-    axis=1)
-
-test_frame_data = np.append(
-    test_set.data,
-    test_set.target.reshape(test_set.data.shape[0], 1),
-    axis=1)
-
-training_frame = pd.DataFrame(training_frame_data, columns=COLUMNS)
-testing_frame = pd.DataFrame(test_frame_data, columns=COLUMNS)
-
 
 def restore(step, model_str='data/numerai/model.ckpt-'):
     meta = model_str + step
@@ -97,53 +70,44 @@ def restore(step, model_str='data/numerai/model.ckpt-'):
     return graph, names
 
 
-graph, names = restore('4478')
+datasets = util.numerai_datasets(one_hot=True)
+train_set = datasets.train
+test_set = datasets.test
+classes = 2
+features = 50
+'''Return from meta model'''
+graph, names = restore('2397')
 accuracy = graph.get_operation_by_name('xentropy_mean').outputs[0]
 data_pl = graph.get_operation_by_name('data_pl').outputs[0]
 labels_pl = graph.get_operation_by_name('labels_pl').outputs[0]
-dim = data_pl.shape[0]
-feed_dict = {data_pl: test_set.data[0:dim], labels_pl: test_set.target[0:dim]}
-print(sess.run(accuracy, feed_dict=feed_dict))
+test_size = int(data_pl.shape[0])
+'''Rebuild logits'''
+'''REBUILD BY HAND INFERENCE FUNCTION'''
+logits = util.inference(data_pl, 25, 25, classes, features)
+'''Pred / Accuracy data'''
+from random import randint
+beg = randint(0, test_set.data.shape[0]-test_size)
+end = beg + test_size
+print 'Testing {} - {}'.format(beg, end)
+data_feed = test_set.data[beg:end]
+label_feed = test_set.labels[beg:end]
+target_feed = test_set.targets[beg:end]
+'''Predictions'''
+prediction = tf.nn.softmax(logits)
+sess.run(tf.global_variables_initializer())
+feed_dict = {data_pl: data_feed}
+preds = sess.run(prediction, feed_dict=feed_dict)
+argmax = sess.run(tf.argmax(preds, 1))
+print 'Correct predictions: {}'.format(np.sum(argmax == target_feed))
+'''Accuracy'''
+feed_dict = {data_pl: data_feed, labels_pl: label_feed}
+acc = sess.run(accuracy, feed_dict=feed_dict)
+print 'Meta accuracy {}'.format(acc)
+correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels_pl, 1))
+accurate = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+acc2 = sess.run(accurate, feed_dict=feed_dict)
+print 'Rebuilt accuracy {}'.format(acc2)
 
-
-def example_classifier():
-    classifier = tf.contrib.learn.DNNClassifier(
-        feature_columns=feature_columns,
-        hidden_units=hidden_units,
-        model_dir=model_dir)
-    return classifier
-
-
-def input_fn(data_set):
-    """
-    Parameters
-    ----------
-    data_set : pandas.DataFrame
-        DataFrame containing Tensor initialized data
-
-    Returns
-    -------
-    feature : dict
-        Key/value feature/tensor of feature.
-    label : tf.Tensor
-    """
-    feature_cols = {k: tf.constant(data_set[k].values,
-                                   shape=[data_set[k].size, 1])
-                    for k in FEATURES}
-    labels = tf.constant(data_set[LABEL].values,
-                         shape=[data_set[LABEL].size, 1])
-    return feature_cols, labels
-
-
-# classifier = example_classifier()
-
-
-# def fi(frame, steps=0):
-#     classifier.fit(input_fn=lambda: input_fn(frame), steps=steps)
-
-
-# def ev(frame, steps=1):
-#     return classifier.evaluate(input_fn=lambda: input_fn(frame), steps=steps)
 
 # Testing
 

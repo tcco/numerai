@@ -6,10 +6,14 @@ from sklearn import preprocessing  # NOQA
 from tensorflow.python.framework import dtypes  # NOQA
 
 
-def placeholder_inputs(batch_size, num_features):
-	data_placeholder = tf.placeholder(tf.float32, shape=(batch_size, num_features), name='data_pl')
-	labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size), name='labels_pl')
-	return data_placeholder, labels_placeholder
+def placeholder_inputs(batch_size, num_features, num_classes=1, one_hot=True):
+  data_shape = (batch_size, num_features)
+  data_placeholder = tf.placeholder(tf.float32, shape=data_shape, name='data_pl')
+  labels_shape = (batch_size)
+  if one_hot:
+    labels_shape = (batch_size, num_classes)
+  labels_placeholder = tf.placeholder(tf.int32, shape=labels_shape, name='labels_pl')
+  return data_placeholder, labels_placeholder
 
 
 def inference(data, hidden1_units, hidden2_units, num_classes, num_features):
@@ -44,7 +48,7 @@ def inference(data, hidden1_units, hidden2_units, num_classes, num_features):
 	return logits
 
 
-def loss(logits, labels):
+def loss(logits, labels, one_hot=True):
   """Calculates the loss from the logits and the labels.
 
   Args:
@@ -55,8 +59,14 @@ def loss(logits, labels):
 	loss: Loss tensor of type float.
   """
   labels = tf.to_int64(labels)
-  cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
-	  labels=labels, logits=logits, name='xentropy')
+  if one_hot:
+    print('One_hot, using softmax probability distribution...\n')
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(
+      labels=labels, logits=logits, name='xentropy')
+  else:
+    print('Not one_hot, using sparse softmax for discrete labels...\n')
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
+      labels=labels, logits=logits, name='xentropy')
   return tf.reduce_mean(cross_entropy, name='xentropy_mean')
 
 
@@ -89,7 +99,7 @@ def training(loss, learning_rate):
   return train_op
 
 
-def evaluation(logits, labels):
+def evaluation(logits, labels, one_hot=True):
   """Evaluate the quality of the logits at predicting the label.
 
   Args:
@@ -108,6 +118,7 @@ def evaluation(logits, labels):
   correct = tf.nn.in_top_k(logits, labels, 1)
   # Return the number of true entries.
   return tf.reduce_sum(tf.cast(correct, tf.int32))
+
 
 
 def fill_feed_dict(data_set, images_pl, labels_pl, batch_size):

@@ -117,6 +117,8 @@ class Dataset(object):
 
     @property
     def targets(self):
+        if self._targets is None:
+            return self._labels
         return self._targets
 
     @property

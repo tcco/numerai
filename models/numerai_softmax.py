@@ -16,7 +16,7 @@ FLAGS = None
 
 
 def main(_):
-    datasets = util.numerai_datasets()
+    datasets = util.numerai_datasets(one_hot=True)
     features = datasets.features
     classes = datasets.classes
 

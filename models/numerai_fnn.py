@@ -19,7 +19,7 @@ FLAGS = None
 
 def run_training():
     # Import data
-    datasets = util.numerai_datasets(one_hot=False)
+    datasets = util.numerai_datasets(one_hot=FLAGS.one_hot)
     features = datasets.features
     classes = datasets.classes
     print('Extracted train and test sets, building model...')
@@ -28,7 +28,9 @@ def run_training():
         # Create the model
         print('Creating data and labels placeholders...\n')
         data_placeholder, labels_placeholder = util.placeholder_inputs(FLAGS.batch_size,
-                                                                       num_features=features)
+                                                                       num_features=features,
+                                                                       num_classes=classes,
+                                                                       one_hot=FLAGS.one_hot)
         print('Logits using data placholder...\n')
         logits = util.inference(data_placeholder,
                                 FLAGS.hidden1,
@@ -37,13 +39,13 @@ def run_training():
                                 num_features=features)
 
         print('Loss using labels placholder...\n')
-        loss = util.loss(logits, labels_placeholder)
+        loss = util.loss(logits, labels_placeholder, one_hot=FLAGS.one_hot)
 
         print('Add training operation...\n')
         train_op = util.training(loss, FLAGS.learning_rate)
 
         print('Evaluation of logits compared to labels...\n')
-        eval_correct = util.evaluation(logits, labels_placeholder)
+        eval_correct = util.evaluation(logits, labels_placeholder, one_hot=FLAGS.one_hot)
 
         print('Build summary Tensor based on collections...\n')
         summary = tf.summary.merge_all()
@@ -74,42 +76,61 @@ def run_training():
             duration = time.time() - start_time
 
             if loss_value < best_loss:
+                print('\n+++ Step %d: loss = %.4f (%.5f sec)\n' % (step, loss_value, duration))
                 best_loss = loss_value
                 best_step = step
                 how_many += 1
-                checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
-                saver.save(sess, checkpoint_file, global_step=step)
+                if loss_value < .680:
+                    print('****Saving....Saving....Saving....')
+                    checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
+                    saver.save(sess, checkpoint_file, global_step=step)
+                # print('Training Data Eval:')
+                # util.do_eval(
+                #     sess,
+                #     eval_correct,
+                #     data_placeholder,
+                #     labels_placeholder,
+                #     datasets.train,
+                #     FLAGS.batch_size)
+                # print('Test Data Eval:')
+                # util.do_eval(
+                #     sess,
+                #     eval_correct,
+                #     data_placeholder,
+                #     labels_placeholder,
+                #     datasets.test,
+                #     FLAGS.batch_size)
 
             # Write the summaries and print an overview fairly often.
             if step % 100 == 0:
                 # Print status to stdout.
-                print('Step %d: loss = %.4f (%.5f sec)' % (step, loss_value, duration))
+                # print('Step %d: loss = %.4f (%.5f sec)' % (step, loss_value, duration))
                 # Update the events file.
                 summary_str = sess.run(summary, feed_dict=feed_dict)
                 summary_writer.add_summary(summary_str, step)
                 summary_writer.flush()
 
             # Save a checkpoint and evaluate the model periodically.
-            if (step + 1) % 1000 == 0 or (step + 1) == FLAGS.max_steps:
+            # if (step + 1) % 1000 == 0 or (step + 1) == FLAGS.max_steps:
                 # checkpoint_file = os.path.join(FLAGS.log_dir, 'model.ckpt')
                 # saver.save(sess, checkpoint_file, global_step=step)
                 # Evaluate against the training set.
-                print('Training Data Eval:')
-                util.do_eval(
-                    sess,
-                    eval_correct,
-                    data_placeholder,
-                    labels_placeholder,
-                    datasets.train,
-                    FLAGS.batch_size)
-                print('Test Data Eval:')
-                util.do_eval(
-                    sess,
-                    eval_correct,
-                    data_placeholder,
-                    labels_placeholder,
-                    datasets.test,
-                    FLAGS.batch_size)
+                # print('Training Data Eval:')
+                # util.do_eval(
+                #     sess,
+                #     eval_correct,
+                #     data_placeholder,
+                #     labels_placeholder,
+                #     datasets.train,
+                #     FLAGS.batch_size)
+                # print('Test Data Eval:')
+                # util.do_eval(
+                #     sess,
+                #     eval_correct,
+                #     data_placeholder,
+                #     labels_placeholder,
+                #     datasets.test,
+                #     FLAGS.batch_size)
         print('How many best? %d Best loss value = %.4f at step %d' % (how_many, best_loss, best_step))
 
 
@@ -122,6 +143,12 @@ def main(_):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--one_hot',
+        type=bool,
+        default=False,
+        help='Determines sparse vs proba output.'
+    )
     parser.add_argument(
         '--learning_rate',
         type=float,
