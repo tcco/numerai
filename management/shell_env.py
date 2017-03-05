@@ -70,46 +70,76 @@ def restore(step, model_str='data/numerai/model.ckpt-'):
     return graph, names
 
 
-datasets = util.numerai_datasets(one_hot=True)
+def tensor_restore(graph):
+    h1w = graph.get_tensor_by_name('hidden1/weights:0')
+    h1b = graph.get_tensor_by_name('hidden1/biases:0')
+    h2w = graph.get_tensor_by_name('hidden2/weights:0')
+    h2b = graph.get_tensor_by_name('hidden2/biases:0')
+    smw = graph.get_tensor_by_name('softmax_linear/weights:0')
+    smb = graph.get_tensor_by_name('softmax_linear/biases:0')
+    return h1w, h1b, h2w, h2b, smw, smb
+
+
+def inference(data, graph):
+    h1w, h1b, h2w, h2b, smw, smb = tensor_restore(graph)
+    hidden1 = tf.nn.relu(tf.matmul(data, h1w) + h1b)
+    hidden2 = tf.nn.relu(tf.matmul(hidden1, h2w) + h2b)
+    logits = tf.nn.softmax(tf.matmul(hidden2, smw) + smb)
+    return logits
+
+one_hot = False
+preprocess = False
+datasets = util.numerai_datasets(one_hot=one_hot, preprocess=preprocess)
 train_set = datasets.train
 test_set = datasets.test
+hidden_units = 25
 classes = 2
 features = 50
+test_size = test_set.data.shape[0]
 '''Return from meta model'''
-graph, names = restore('2397')
+graph, names = restore('1477')
 accuracy = graph.get_operation_by_name('xentropy_mean').outputs[0]
-data_pl = graph.get_operation_by_name('data_pl').outputs[0]
-labels_pl = graph.get_operation_by_name('labels_pl').outputs[0]
-test_size = int(data_pl.shape[0])
-'''Rebuild logits'''
-'''REBUILD BY HAND INFERENCE FUNCTION'''
-logits = util.inference(data_pl, 25, 25, classes, features)
-'''Pred / Accuracy data'''
-from random import randint
-beg = randint(0, test_set.data.shape[0]-test_size)
-end = beg + test_size
-print 'Testing {} - {}'.format(beg, end)
-data_feed = test_set.data[beg:end]
-label_feed = test_set.labels[beg:end]
-target_feed = test_set.targets[beg:end]
-'''Predictions'''
-prediction = tf.nn.softmax(logits)
-sess.run(tf.global_variables_initializer())
-feed_dict = {data_pl: data_feed}
-preds = sess.run(prediction, feed_dict=feed_dict)
-argmax = sess.run(tf.argmax(preds, 1))
-print 'Correct predictions: {}'.format(np.sum(argmax == target_feed))
-'''Accuracy'''
-feed_dict = {data_pl: data_feed, labels_pl: label_feed}
-acc = sess.run(accuracy, feed_dict=feed_dict)
-print 'Meta accuracy {}'.format(acc)
-correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(labels_pl, 1))
-accurate = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-acc2 = sess.run(accurate, feed_dict=feed_dict)
-print 'Rebuilt accuracy {}'.format(acc2)
+h1w, h1b, h2w, h2b, smw, smb = tensor_restore(graph)
 
+'''Rebuild data and labels placeholder'''
+data_pl, labels_pl = util.placeholder_inputs(
+    test_set.data.shape[0],
+    features,
+    classes,
+    one_hot=one_hot)
+'''Rebuild logits'''
+logits = inference(data_pl, graph)
+'''Pred / Accuracy data'''
+data_feed = test_set.data
+label_feed = test_set.labels
+target_feed = test_set.targets
+
+sess.run(tf.global_variables_initializer())
+feed_dict = {data_pl: data_feed, labels_pl: label_feed}
+saver = tf.train.Saver()
+ckpt = tf.train.get_checkpoint_state('data/numerai')
+saver.restore(sess, ckpt.model_checkpoint_path)
+preds = sess.run(logits, feed_dict)
+argmax = sess.run(tf.argmax(preds, 1))
+correct = float(np.sum(argmax == target_feed))
+print 'Correct predictions: {} ({}%)'.format(correct, 100*correct / test_size)
+'''
+preds = sess.run(logits, feed_dict=feed_dict)
+argmax = sess.run(tf.argmax(preds, 1))
+correct = float(np.sum(argmax == target_feed))
+print 'Correct predictions: {} ({}%)'.format(correct, 100*correct / test_size)
+correct = tf.nn.in_top_k(logits, labels_pl, 1)
+eval_correct = tf.reduce_sum(tf.cast(correct, tf.int32))
+true_count = sess.run(eval_correct, feed_dict=feed_dict)
+print 'True count: {} ({}%)'.format(true_count, 100*float(true_count) / test_size)
+
+loss = util.loss(logits, labels_pl, one_hot=one_hot)
+loss_val = sess.run(loss, feed_dict=feed_dict)
+print 'Loss: {}'.format(loss_val)
+'''
 
 # Testing
+
 
 def import_data(filename):
     """ Example of how to save

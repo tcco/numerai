@@ -180,8 +180,8 @@ class Dataset(object):
 
 
 
-def numerai_datasets(one_hot=True):
-    train_set, test_set = train_test_set()
+def numerai_datasets(one_hot=True, preprocess=True):
+    train_set, test_set = train_test_set(preprocess=preprocess)
     features = train_set.data.shape[1]
     classes = int(np.ptp(train_set.target, axis=0) + 1)
     if one_hot:
