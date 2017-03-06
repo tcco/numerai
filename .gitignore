@@ -4,6 +4,7 @@ MNIST_data
 tmp
 data/mnist
 data/numerai
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

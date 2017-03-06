@@ -99,7 +99,8 @@ def run_training():
             # Write the summaries and print an overview fairly often.
             if step % 100 == 0:
                 # Print status to stdout.
-                print('Step %d: loss = %.4f (%.5f sec)' % (step, loss_value, duration))
+                print('Step %d: loss = %.4f (%.5f sec)' %
+                      (step, loss_value, duration))
                 # Update the events file.
                 summary_str = sess.run(summary, feed_dict=feed_dict)
                 summary_writer.add_summary(summary_str, step)
@@ -126,7 +127,8 @@ def run_training():
                     labels_placeholder,
                     mnist.test,
                     FLAGS.batch_size)
-        print('How many best? %d Best loss value = %.4f at step %d' % (how_many, best_loss, best_step))
+        print('How many best? %d Best loss value = %.4f at step %d' %
+              (how_many, best_loss, best_step))
 
 
 def main(_):

@@ -6,9 +6,11 @@ from sklearn import preprocessing  # NOQA
 from tensorflow.python.framework import dtypes  # NOQA
 
 
-Datasets = collections.namedtuple('Datasets', ['train', 'test', 'features', 'classes'])
+Datasets = collections.namedtuple(
+    'Datasets', ['train', 'test', 'features', 'classes'])
 TrainTestSet = collections.namedtuple('TrainTestSet', ['data', 'target'])
-PredictionSet = collections.namedtuple('PredictionSet', ['data', 'sample', 'ids'])
+PredictionSet = collections.namedtuple(
+    'PredictionSet', ['data', 'sample', 'ids'])
 
 
 def import_data(filename):
@@ -26,17 +28,17 @@ def train_test_set(preprocess=True,
                    test_percentage=.2):
     training = training_data()
     if preprocess:
-        ############# Range
+        # Range
         min_max_scaler = preprocessing.MinMaxScaler()
         data = min_max_scaler.fit_transform(training[:, :-1])
-        ############# Standardize
+        # Standardize
         # data = preprocessing.scale(training[:, :-1])
-        ############# Normalize
+        # Normalize
         # data = preprocessing.normalize(training[:, :-1], norm='l2')
     else:
         data = training[:, :-1]
     target = training[:, -1]
-    test_size = int(training.shape[0]*test_percentage)
+    test_size = int(training.shape[0] * test_percentage)
     train_set = TrainTestSet(
         data=data[0:-test_size],
         target=target[0:-test_size])
@@ -49,12 +51,12 @@ def train_test_set(preprocess=True,
 def train_set(preprocess=True):
     training = training_data()
     if preprocess:
-        ############# Range
+        # Range
         min_max_scaler = preprocessing.MinMaxScaler()
         data = min_max_scaler.fit_transform(training[:, :-1])
-        ############# Standardize
+        # Standardize
         # data = preprocessing.scale(training[:, :-1])
-        ############# Normalize
+        # Normalize
         # data = preprocessing.normalize(training[:, :-1], norm='l2')
     else:
         data = training[:, :-1]
@@ -65,11 +67,16 @@ def train_set(preprocess=True):
     return train_set
 
 
-def prediction_data(preprocess=True,
-                    size=19):
+def prediction_set(preprocess=True,
+                   size=19):
     prediction = import_data('data/prediction.pklz')
     if preprocess:
-        data = preprocessing.scale(prediction[:, 1:])
+        min_max_scaler = preprocessing.MinMaxScaler()
+        data = min_max_scaler.fit_transform(prediction[:, 1:])
+        # Standardize
+        # data = preprocessing.scale(prediction[:, 1:])
+        # Normalize
+        # data = preprocessing.normalize(prediction[:, 1:], norm='l2')
     else:
         data = prediction[:, 1:]
     sample = data[0:size]
@@ -177,7 +184,6 @@ class Dataset(object):
             self._index_in_epoch += batch_size
             end = self._index_in_epoch
             return self._data[start:end], self._labels[start:end]
-
 
 
 def numerai_datasets(one_hot=True, preprocess=True):

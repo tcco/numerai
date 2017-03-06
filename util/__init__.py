@@ -5,6 +5,7 @@ Utility folder with machine learning convenience.
 from data import Dataset
 from data import train_set
 from data import train_test_set
+from data import prediction_set
 from data import numerai_datasets
 
 from fnn import placeholder_inputs
