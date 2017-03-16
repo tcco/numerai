@@ -91,7 +91,7 @@ def training(loss, learning_rate, decay, steps):
     """
     # Add a scalar summary for the snapshot loss.
     tf.summary.scalar('loss', loss)
-    # Create a variable to track the global step.
+    # Create a variable to track the global step
     global_step = tf.Variable(0, name='global_step', trainable=False)
     # Optional decay of learning rate
     if decay is True:
@@ -99,7 +99,7 @@ def training(loss, learning_rate, decay, steps):
             learning_rate=learning_rate,
             global_step=global_step,
             decay_steps=steps,
-            decay_rate=0.5,
+            decay_rate=0.25,
             staircase=True)
     else:
         lr = learning_rate

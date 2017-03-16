@@ -57,9 +57,117 @@ click.secho('>>> Dataset = collections.namedtuple(Dataset, [data, target])',
 import collections
 Dataset = collections.namedtuple('Dataset', ['data', 'target'])
 
+import cPickle
+import gzip
 
-def restore(step, model_str='data/numerai/model.ckpt-'):
-    meta = model_str + step
+
+def extract():
+    train_pd = pd.read_csv('numerai_training_data.csv', delimiter=',', header=0)
+    tourn_pd = pd.read_csv('numerai_tournament_data.csv', delimiter=',', header=0)
+    train = train_pd.as_matrix()
+    tourn = tourn_pd.as_matrix()
+    return train, tourn
+
+
+def save_data():
+    train, tourn = extract()
+    with gzip.open('data/training.pklz', 'wb') as f:
+        cPickle.dump(train, f, -1)
+
+    with gzip.open('data/prediction.pklz', 'wb') as f:
+        cPickle.dump(tourn, f, -1)
+
+
+def import_data(filename):
+    """ Example of how to save
+    with gzip.open(filename, 'wb') as f:
+        cPickle.dump(obj, f, -1)
+    """
+    with gzip.open(filename, 'rb') as f:
+        return cPickle.load(f)
+
+# DNNLinearRegression w/ Softmax outputs
+import copy
+
+wide_columns = []
+deep_columns = []
+continuous_columns = []
+label_column = 'target'
+for x in range(50):
+    var = 'feature{}'.format(x + 1)
+    vars()[var] = tf.contrib.layers.real_valued_column(var)
+    continuous_columns.append(var)
+    wide_columns.append(vars()[var])
+    deep_columns.append(vars()[var])
+
+m = tf.contrib.learn.DNNLinearCombinedClassifier(
+    model_dir='data/linear',
+    linear_feature_columns=wide_columns,
+    dnn_feature_columns=deep_columns,
+    dnn_hidden_units=[25, 25])
+
+names = copy.copy(continuous_columns)
+names.append(label_column)
+df = pd.read_csv('numerai_training_data.csv',
+                 names=names,
+                 skipinitialspace=True,
+                 skiprows=1)
+msk = np.random.rand(len(df)) < .8
+df_train = df[msk]
+df_test = df[~msk]
+
+
+pred_names = ['t_id']
+pred_names.extend(names)
+df_pred = pd.read_csv('numerai_tournament_data.csv',
+                      names=pred_names,
+                      skipinitialspace=True,
+                      skiprows=1)
+df_preds = df_pred[names]
+df_tids = df_pred['t_id']
+
+def input_fn(df):
+    continuous_cols = {k: tf.constant(df[k].values)
+                       for k in continuous_columns}
+    feature_cols = dict(continuous_cols.items())
+    label = tf.constant(df[label_column].values)
+    return feature_cols, label
+
+
+def all_input_fn():
+    return input_fn(df)
+
+
+def train_input_fn():
+    return input_fn(df_train)
+
+
+def test_input_fn():
+    return input_fn(df_test)
+
+
+def preds_input_fn():
+    return input_fn(df_preds)
+
+
+def predict():
+    y = m.predict(input_fn=preds_input_fn, as_iterable=False)
+    y_proba = m.predict_proba(input_fn=preds_input_fn, as_iterable=False)
+    evaluation = m.evaluate(input_fn=all_input_fn, steps=1)
+    return y, y_proba[:, 1], evaluation
+
+
+def save_preds(pred_ones, t_id):
+    np.savetxt('predictions.csv',
+               zip(t_id, pred_ones),
+               fmt='%d,%f',
+               header='t_id,probability')
+
+# FNN Softmax softmax_linear
+"""
+
+def restore(step, model_str='data/numerai'):
+    meta = model_str + '/model.ckpt-' + step
     saver = tf.train.import_meta_graph('{}.meta'.format(meta))
     saver.restore(sess, meta)
     graph = tf.get_default_graph()
@@ -68,7 +176,6 @@ def restore(step, model_str='data/numerai/model.ckpt-'):
     for o in ops:
         names.append(o.name)
     return graph, names
-
 
 def tensor_restore(graph):
     h1w = graph.get_tensor_by_name('hidden1/weights:0')
@@ -87,22 +194,21 @@ def inference(data, graph):
     logits = tf.nn.softmax(tf.matmul(hidden2, smw) + smb)
     return logits
 
-'''Prediction'''
 prediction_set = util.prediction_set()
 one_hot = False
-preprocess = True
+preprocess = False
 datasets = util.numerai_datasets(one_hot=one_hot, preprocess=preprocess)
 train_set = datasets.train
 test_set = datasets.test
 classes = 2
 features = 50
 test_size = test_set.data.shape[0]
-'''Return from meta model'''
-graph, names = restore('0')
+
+graph, names = restore('4066')
 accuracy = graph.get_operation_by_name('xentropy_mean').outputs[0]
 h1w, h1b, h2w, h2b, smw, smb = tensor_restore(graph)
 
-'''Rebuild data and labels placeholder'''
+
 data_pl, labels_pl = util.placeholder_inputs(
     test_set.data.shape[0],
     features,
@@ -112,10 +218,10 @@ pred_data_pl = tf.placeholder(
     tf.float32,
     shape=prediction_set.data.shape,
     name='pred_data_pl')
-'''Rebuild logits'''
+
 logits = inference(data_pl, graph)
 pred_logits = inference(pred_data_pl, graph)
-'''Pred / Accuracy data'''
+
 data_feed = test_set.data
 prediction_feed = prediction_set.data
 label_feed = test_set.labels
@@ -128,10 +234,10 @@ saver = tf.train.Saver()
 ckpt = tf.train.get_checkpoint_state('data/numerai')
 saver.restore(sess, ckpt.model_checkpoint_path)
 predictions = sess.run(pred_logits, prediction_dict)
-predictions_one = predictions[:, 1]
+pred_ones = predictions[:, 1]
 tids = prediction_set.ids
 
-'''Analysis on test set'''
+
 preds = sess.run(logits, feed_dict)
 argmax = sess.run(tf.argmax(preds, 1))
 correct = float(np.sum(argmax == target_feed))
@@ -162,36 +268,4 @@ f1 = 2 * (precision * recall) / (precision+recall)
 print '\t\tpredicted no, predicted yes \n\tactual no     {}    {}\n\tactual yes    {}    {}'.format(
     tn, fp, fn, tp)
 print precision, recall, f1
-
-
-# Testing
-
-
-def import_data(filename):
-    """ Example of how to save
-    with gzip.open(filename, 'wb') as f:
-        cPickle.dump(obj, f, -1)
-    """
-    import cPickle
-    import gzip
-    with gzip.open(filename, 'rb') as f:
-        return cPickle.load(f)
-
-
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
-
-
-def bias_variable(shape):
-    initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
-
-
-def conv2d(x, W):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
-
-
-def max_pool_2x2(x):
-    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
-                          strides=[1, 2, 2, 1], padding='SAME')
+"""

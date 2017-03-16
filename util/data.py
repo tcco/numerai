@@ -186,7 +186,7 @@ class Dataset(object):
             return self._data[start:end], self._labels[start:end]
 
 
-def numerai_datasets(one_hot=True, preprocess=True):
+def numerai_datasets(one_hot=True, preprocess=False):
     train_set, test_set = train_test_set(preprocess=preprocess)
     features = train_set.data.shape[1]
     classes = int(np.ptp(train_set.target, axis=0) + 1)
