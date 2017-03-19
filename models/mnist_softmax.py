@@ -32,7 +32,7 @@ import tensorflow as tf
 
 def main(_):
     # Import data
-    mnist = input_data.read_data_sets('MNIST_DATA', one_hot=True)
+    mnist = input_data.read_data_sets('data/MNIST_DATA', one_hot=True)
     print('Extracted train and test sets, building model...')
 
     # Create the model
@@ -84,7 +84,7 @@ def main(_):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='data/mnist/softmax',
+    parser.add_argument('--data_dir', type=str, default='data/mnist/',
                         help='Directory for storing input data')
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

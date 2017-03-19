@@ -21,6 +21,7 @@ def manage():
 # Add subcommands
 manage.add_command(m.lint)
 manage.add_command(m.shell)
+manage.add_command(m.train)
 
 if __name__ == '__main__':
     manage()

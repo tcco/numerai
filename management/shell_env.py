@@ -33,7 +33,7 @@ from tensorflow.examples.tutorials.mnist import input_data  # NOQA
 
 click.secho('>>> mnist = input_data.read_data_sets(data/MNIST_DATA, one_hot=True)',
             fg='white')
-# mnist = input_data.read_data_sets('data/MNIST_DATA', one_hot=True)  # NOQA
+mnist = input_data.read_data_sets('data/MNIST_DATA', one_hot=True)  # NOQA
 
 click.secho('>>> sess = tf.InteractiveSession()',
             fg='white')
@@ -101,7 +101,7 @@ for x in range(50):
     deep_columns.append(vars()[var])
 
 m = tf.contrib.learn.DNNLinearCombinedClassifier(
-    model_dir='data/linear',
+    model_dir='ckpt/linear',
     linear_feature_columns=wide_columns,
     dnn_feature_columns=deep_columns,
     dnn_hidden_units=[25, 25])

@@ -3,6 +3,8 @@ MNIST_data
 *.csv
 tmp
 data
+events.out.*
+ckpt/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files

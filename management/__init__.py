@@ -7,3 +7,4 @@ Management commands for the application.
 
 from lint import lint  # NOQA
 from shell import shell  # NOQA
+from train import train  # NOQA
