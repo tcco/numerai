@@ -43,7 +43,7 @@ def bootup(model, fake):
     """Necessary steps for booting up AWS instance."""
     click.secho('+\n++\n+++ Lets boot up...')
     click.secho('+\n++\n+++ Using model {}...'.format(model))
-    call = ['docker', 'start', 'gpu_tensorflow']
+    call = ['sudo', 'docker', 'start', 'gpu_tensorflow']
     call_2 = ['jupyter', 'nbconvert', '--to', 'python', 'notebook/'+model+'.ipynb']
     if fake:
         code = SUCCESS
