@@ -14,7 +14,7 @@ SUCCESS = 0
 
 @click.command()
 @click.option('--fake', default=False, is_flag=True)
-@click.option('--model', default='dnnlinear')
+@click.option('--model', default='linear')
 @click.option('--nohup', default=False, is_flag=True)
 @click.option('--steps', default='5000')
 def train(fake, model, nohup, steps):
@@ -117,8 +117,11 @@ def _train(model, steps, fake):
     return code
 
 
-def shutdown(fake):
+def shutdown(model, fake):
     """Shutdown computer."""
+    click.secho('Cleaning checkpoint folder...', fg='red')
+    call = ['./manage', 'clean']
+    subprocess.call(call)
     click.secho('Shutting down... Now...', fg='red')
     click.secho('Bye... Bye... Bye...', fg='red')
     call = ['sudo', 'shutdown', 'now']

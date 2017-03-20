@@ -118,12 +118,13 @@ def run_training():
     train(steps=FLAGS.steps)
     stop = time.time()
     y, y_proba, evaluation = predict()
-    util.logger(evaluation)
-    save_preds(y_proba, df_tids.as_matrix())
     seconds = stop - start
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
-    print "\n\nTotal training time: %d h:%02d m:%02d s\n\n" % (h, m, s)
+    total_time = "%d h: %02d m: %02d s" % (h, m, s)
+    util.logger(evaluation, total_time=total_time)
+    save_preds(y_proba, df_tids.as_matrix())
+    print "\n\nTotal training time: %s \n\n" % (total_time)
     
 
 def main(_):
