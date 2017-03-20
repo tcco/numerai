@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[5]:
+# In[1]:
 
 import os  # NOQA
 import sys  # NOQA
@@ -15,6 +15,7 @@ import argparse
 
 gpu_options = tf.GPUOptions(allow_growth=True)
 sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 wide_columns = []
 deep_columns = []
@@ -64,7 +65,7 @@ print 'DNNLinearRegression Setup Complete'
 
 
 def input_fn(df):
-    continuous_cols = {k: tf.constant(df[k].values)
+    continuous_cols = {k: tf.constant(df[k].values, shape=[df[k].size, 1])
                        for k in continuous_columns}
     feature_cols = dict(continuous_cols.items())
     label = tf.constant(df[label_column].values)
@@ -92,8 +93,8 @@ def train(steps=5000):
 
     
 def predict():
-    y = m.predict(input_fn=preds_input_fn, as_iterable=False)
-    y_proba = m.predict_proba(input_fn=preds_input_fn, as_iterable=False)
+    y = np.array(list(m.predict(input_fn=preds_input_fn)))
+    y_proba = np.array(list(m.predict_proba(input_fn=preds_input_fn)))
     evaluation = m.evaluate(input_fn=all_input_fn, steps=1)
     return y, y_proba[:, 1], evaluation
 
@@ -146,9 +147,4 @@ if __name__ == '__main__':
     )
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-
-
-# In[ ]:
-
-
 

@@ -24,7 +24,7 @@ import pytz
 NUMERAI_SOFTMAX = 'data/numerai/softmax'
 
 
-def logger(message):
+def logger(message, *args, **kwargs):
     import inspect
     date_format='%m/%d/%Y %H:%M:%S %Z'
     date = datetime.datetime.now(tz=pytz.utc)
@@ -34,6 +34,8 @@ def logger(message):
               'name': func.co_name,
               'file_name': func.co_filename,
               'mesage': str(message)}
+    for k in kwargs:
+	packet[k] = kwargs[k]
     with open('data/loggy.logs', 'a+') as l:
         l.write('\n-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n')
         json.dump(packet, l, indent=4, sort_keys=True)
