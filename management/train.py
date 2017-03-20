@@ -14,10 +14,10 @@ SUCCESS = 0
 
 @click.command()
 @click.option('--fake', default=False, is_flag=True)
-@click.option('--nohup', default=False, is_flag=True)
 @click.option('--model', default='dnnlinear')
+@click.option('--nohup', default=False, is_flag=True)
 @click.option('--steps', default='5000')
-def train(fake, model, choice, nohup, steps):
+def train(fake, model, nohup, steps):
     """Subprocess python shell."""
     if nohup:
 	choice = 'd'
