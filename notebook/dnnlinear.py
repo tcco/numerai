@@ -13,6 +13,9 @@ import copy
 import util
 import argparse
 
+gpu_options = tf.GPUOptions(allow_growth=True)
+sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
 wide_columns = []
 deep_columns = []
 continuous_columns = []
@@ -116,20 +119,22 @@ def run_training():
     y, y_proba, evaluation = predict()
     util.logger(evaluation)
     save_preds(y_proba, df_tids.as_matrix())
-    print '\n\nTotal training time: {}\n\n'.format(stop - start)
+    seconds = stop - start
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    print "\n\nTotal training time: %d h:%02d m:%02d s\n\n" % (h, m, s)
     
 
 def main(_):
-    if tf.gfile.Exists(FLAGS.log_dir):
-        tf.gfile.DeleteRecursively(FLAGS.log_dir)
-    tf.gfile.MakeDirs(FLAGS.log_dir)
+    if not tf.gfile.Exists(FLAGS.log_dir):
+        tf.gfile.MakeDirs(FLAGS.log_dir)
     run_training()
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--steps',
-        type=int,
+        type=float,
         default=5000,
         help='Number of steps to run trainer.'
     )

@@ -29,13 +29,15 @@ def train(fake, model):
                           show_default=False)
 
     if choice in ['a', 'd']:
-        bootup(model, fake)
+        code = bootup(model, fake)
+    else:
+	code = SUCCESS
 
-    if choice in ['b', 'd']:
-        steps = click.prompt('How many steps of training should we commit?', type=str)
-        _train(model, steps, fake)
+    if choice in ['b', 'd'] and code == SUCCESS:
+	steps = click.prompt('Number of steps for training?', type=str)
+        code = _train(model, steps, fake)
 
-    if choice in ['c', 'd']:
+    if choice in ['c', 'd'] and code == SUCCESS:
         shutdown(fake)
 
 
@@ -50,16 +52,29 @@ def bootup(model, fake):
         code = subprocess.call(call)
     if code == SUCCESS:
         click.secho('Sucess starting gpu tensorflow container', fg='green')
-        click.secho('+\n++\n+++ Copying necessary files to container for execution...')
-        call = ['sudo', 'docker', 'scp', 'notebook/{}.py', '/']
-        if fake:
-            code = SUCCESS
-        else:
-            copty_to_container('notebook/{}.py'.format(model), '/')
-            copty_to_container('numerai_training_data.csv', '/')
-            copty_to_container('numerai_tournament_data.csv', '/')
     else:
-        click.secho('Failure starting gpu tensorflow container', fg='red')
+        click.secho('+\n++\n+++ That did not work.... Lets try the old-school way...')
+        call = ['sudo', 'nvidia-docker', 'run', '-tid', '--name=gpu_tensorflow',
+	        '-e', 'PASSWORD=Pinncode206', '-p', '8754:8888', '-p', '6006:600',
+		'-v', '/home/ubuntu/numerai:/notebooks', 'tensorflow/tensorflow:latest-gpu']
+	code = subprocess.call(call)
+	if code == SUCCESS:
+	    click.secho('Success starting gpu tensorflow container', fg='green')
+	else:
+            click.secho('Failure starting gpu tensorflow container', fg='red')
+	    return code
+ 
+    click.secho('+\n++\n+++ Installing necessary packages...')
+    call = ['docker', 'exec', 'gpu_tensorflow', 'bash', '-c',
+	    'pip install -r requirements.txt --quiet --user']
+    code = subprocess.call(call)
+    if code == SUCCESS:
+	click.secho('Success installing necessary packages', fg='green')
+    else:
+	click.secho('Failure installing necessary packages', fg='red')
+	return code
+
+    click.secho('+\n++\n+++ Converting notebook .ipynb files to py...')
     call = ['jupyter', 'nbconvert', '--to', 'python', 'notebook/'+model+'.ipynb']
     if fake:
         code = SUCCESS
@@ -69,13 +84,6 @@ def bootup(model, fake):
         click.secho('Sucess converting ipynb file to py, ready to run', fg='green')
     else:
         click.secho('Failure converting ipynb file to py, not ready to run', fg='red')
-
-
-def copty_to_container(fi, location):
-    call = ['sudo', 'docker', 'scp', fi, 'gpu_tensorflow:{}'.format(location)]
-    code = subprocess.call(call)
-    if code == SUCCESS:
-        click.secho('Successfully copied!')
     return code
 
 
@@ -84,7 +92,8 @@ def _train(model, steps, fake):
     click.secho('+\n++\n+++ Lets begin training...')
     click.secho('+\n++\n+++ Using model {}...'.format(model))
     click.secho('+\n++\n+++ Training for {} steps...'.format(steps))
-    call = ['python', 'notebook/'+model+'.py', '--steps', steps]
+    call = ['docker', 'exec', 'gpu_tensorflow', 'bash', '-c',
+	    'python notebook/{}.py --steps {}'.format(model, steps)]
     if fake:
         code = SUCCESS
     else:
@@ -93,6 +102,7 @@ def _train(model, steps, fake):
         click.secho('Sucess training! Checkout the logs /results at data/loggy.logs', fg='green')
     else:
         click.secho('Failure training :(', fg='red')
+    return code
 
 
 def shutdown(fake):

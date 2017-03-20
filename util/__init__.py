@@ -18,15 +18,19 @@ from fnn import do_eval  # NOQA
 
 import json
 import datetime
+from pytz import timezone
+import pytz
 
 NUMERAI_SOFTMAX = 'data/numerai/softmax'
 
 
 def logger(message):
     import inspect
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date_format='%m/%d/%Y %H:%M:%S %Z'
+    date = datetime.datetime.now(tz=pytz.utc)
+    date = date.astimezone(timezone('US/Pacific'))
     func = inspect.currentframe().f_back.f_code
-    packet = {'time': ts,
+    packet = {'time': date.strftime(date_format),
               'name': func.co_name,
               'file_name': func.co_filename,
               'mesage': str(message)}
