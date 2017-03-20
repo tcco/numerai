@@ -1,4 +1,5 @@
 # Data
+nohup.*
 MNIST_data
 *.csv
 tmp

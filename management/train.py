@@ -14,19 +14,24 @@ SUCCESS = 0
 
 @click.command()
 @click.option('--fake', default=False, is_flag=True)
+@click.option('--nohup', default=False, is_flag=True)
 @click.option('--model', default='dnnlinear')
-def train(fake, model):
+@click.option('--steps', default='5000')
+def train(fake, model, choice, nohup, steps):
     """Subprocess python shell."""
-    click.secho('\nChoose training proces:')
-    click.secho('a) Boot Up')
-    click.secho('b) Train')
-    click.secho('c) Shutdown')
-    click.secho('d) All of the Above')
+    if nohup:
+	choice = 'd'
+    else:
+        click.secho('\nChoose training proces:')
+        click.secho('a) Boot Up')
+        click.secho('b) Train')
+        click.secho('c) Shutdown')
+        click.secho('d) All of the Above')
 
-    choice = click.prompt(click.style('default is b'),
-                          type=click.Choice(['a', 'b', 'c', 'd']),
-                          default='b',
-                          show_default=False)
+        choice = click.prompt(click.style('default is b'),
+                              type=click.Choice(['a', 'b', 'c', 'd']),
+                              default='b',
+                              show_default=False)
 
     if choice in ['a', 'd']:
         code = bootup(model, fake)
@@ -34,7 +39,8 @@ def train(fake, model):
 	code = SUCCESS
 
     if choice in ['b', 'd'] and code == SUCCESS:
-	steps = click.prompt('Number of steps for training?', type=str)
+	if not nohup:
+	    steps = click.prompt('Number of steps for training?', type=str)
         code = _train(model, steps, fake)
 
     if choice in ['c', 'd'] and code == SUCCESS:
