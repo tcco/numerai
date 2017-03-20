@@ -44,17 +44,39 @@ def bootup(model, fake):
     click.secho('+\n++\n+++ Lets boot up...')
     click.secho('+\n++\n+++ Using model {}...'.format(model))
     call = ['sudo', 'docker', 'start', 'gpu_tensorflow']
-    call_2 = ['jupyter', 'nbconvert', '--to', 'python', 'notebook/'+model+'.ipynb']
     if fake:
         code = SUCCESS
-        code_2 = SUCCESS
     else:
         code = subprocess.call(call)
-        code_2 = subprocess.call(call_2)
-    if code == SUCCESS and code_2 == SUCCESS:
-        click.secho('Sucess booting up', fg='green')
+    if code == SUCCESS:
+        click.secho('Sucess starting gpu tensorflow container', fg='green')
+        click.secho('+\n++\n+++ Copying necessary files to container for execution...')
+        call = ['sudo', 'docker', 'scp', 'notebook/{}.py', '/']
+        if fake:
+            code = SUCCESS
+        else:
+            copty_to_container('notebook/{}.py'.format(model), '/')
+            copty_to_container('numerai_training_data.csv', '/')
+            copty_to_container('numerai_tournament_data.csv', '/')
     else:
-        click.secho('Failure booting up', fg='red')
+        click.secho('Failure starting gpu tensorflow container', fg='red')
+    call = ['jupyter', 'nbconvert', '--to', 'python', 'notebook/'+model+'.ipynb']
+    if fake:
+        code = SUCCESS
+    else:
+        code = subprocess.call(call)
+    if code == SUCCESS:
+        click.secho('Sucess converting ipynb file to py, ready to run', fg='green')
+    else:
+        click.secho('Failure converting ipynb file to py, not ready to run', fg='red')
+
+
+def copty_to_container(fi, location):
+    call = ['sudo', 'docker', 'scp', fi, 'gpu_tensorflow:{}'.format(location)]
+    code = subprocess.call(call)
+    if code == SUCCESS:
+        click.secho('Successfully copied!')
+    return code
 
 
 def _train(model, steps, fake):
