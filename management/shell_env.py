@@ -33,7 +33,7 @@ from tensorflow.examples.tutorials.mnist import input_data  # NOQA
 
 click.secho('>>> mnist = input_data.read_data_sets(data/MNIST_DATA, one_hot=True)',
             fg='white')
-mnist = input_data.read_data_sets('data/MNIST_DATA', one_hot=True)  # NOQA
+# mnist = input_data.read_data_sets('data/MNIST_DATA', one_hot=True)  # NOQA
 
 click.secho('>>> sess = tf.InteractiveSession()',
             fg='white')
@@ -126,8 +126,9 @@ df_pred = pd.read_csv('numerai_tournament_data.csv',
 df_preds = df_pred[names]
 df_tids = df_pred['t_id']
 
+
 def input_fn(df):
-    continuous_cols = {k: tf.constant(df[k].values)
+    continuous_cols = {k: tf.constant(df[k].values, shape=[df[k].size, 1])
                        for k in continuous_columns}
     feature_cols = dict(continuous_cols.items())
     label = tf.constant(df[label_column].values)

@@ -22,6 +22,7 @@ def manage():
 manage.add_command(m.lint)
 manage.add_command(m.shell)
 manage.add_command(m.train)
+manage.add_command(m.clean)
 
 if __name__ == '__main__':
     manage()

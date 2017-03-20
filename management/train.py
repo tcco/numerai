@@ -20,7 +20,7 @@ SUCCESS = 0
 def train(fake, model, nohup, steps):
     """Subprocess python shell."""
     if nohup:
-	choice = 'd'
+        choice = 'd'
     else:
         click.secho('\nChoose training proces:')
         click.secho('a) Boot Up')
@@ -36,11 +36,11 @@ def train(fake, model, nohup, steps):
     if choice in ['a', 'd']:
         code = bootup(model, fake)
     else:
-	code = SUCCESS
+        code = SUCCESS
 
     if choice in ['b', 'd'] and code == SUCCESS:
-	if not nohup:
-	    steps = click.prompt('Number of steps for training?', type=str)
+        if not nohup:
+            steps = click.prompt('Number of steps for training?', type=str)
         code = _train(model, steps, fake)
 
     if choice in ['c', 'd'] and code == SUCCESS:
@@ -59,37 +59,42 @@ def bootup(model, fake):
     if code == SUCCESS:
         click.secho('Sucess starting gpu tensorflow container', fg='green')
     else:
-        click.secho('+\n++\n+++ That did not work.... Lets try the old-school way...')
+        click.secho(
+            '+\n++\n+++ That did not work.... Lets try the old-school way...')
         call = ['sudo', 'nvidia-docker', 'run', '-tid', '--name=gpu_tensorflow',
-	        '-e', 'PASSWORD=Pinncode206', '-p', '8754:8888', '-p', '6006:600',
-		'-v', '/home/ubuntu/numerai:/notebooks', 'tensorflow/tensorflow:latest-gpu']
-	code = subprocess.call(call)
-	if code == SUCCESS:
-	    click.secho('Success starting gpu tensorflow container', fg='green')
-	else:
+                '-e', 'PASSWORD=Pinncode206', '-p', '8754:8888', '-p', '6006:600',
+                '-v', '/home/ubuntu/numerai:/notebooks', 'tensorflow/tensorflow:latest-gpu']
+        code = subprocess.call(call)
+        if code == SUCCESS:
+            click.secho(
+                'Success starting gpu tensorflow container', fg='green')
+        else:
             click.secho('Failure starting gpu tensorflow container', fg='red')
-	    return code
- 
+            return code
+
     click.secho('+\n++\n+++ Installing necessary packages...')
     call = ['docker', 'exec', 'gpu_tensorflow', 'bash', '-c',
-	    'pip install -r requirements.txt --quiet --user']
+            'pip install -r requirements.txt --quiet --user']
     code = subprocess.call(call)
     if code == SUCCESS:
-	click.secho('Success installing necessary packages', fg='green')
+        click.secho('Success installing necessary packages', fg='green')
     else:
-	click.secho('Failure installing necessary packages', fg='red')
-	return code
+        click.secho('Failure installing necessary packages', fg='red')
+        return code
 
     click.secho('+\n++\n+++ Converting notebook .ipynb files to py...')
-    call = ['jupyter', 'nbconvert', '--to', 'python', 'notebook/'+model+'.ipynb']
+    call = ['jupyter', 'nbconvert', '--to',
+            'python', 'notebook/' + model + '.ipynb']
     if fake:
         code = SUCCESS
     else:
         code = subprocess.call(call)
     if code == SUCCESS:
-        click.secho('Sucess converting ipynb file to py, ready to run', fg='green')
+        click.secho(
+            'Sucess converting ipynb file to py, ready to run', fg='green')
     else:
-        click.secho('Failure converting ipynb file to py, not ready to run', fg='red')
+        click.secho(
+            'Failure converting ipynb file to py, not ready to run', fg='red')
     return code
 
 
@@ -99,13 +104,14 @@ def _train(model, steps, fake):
     click.secho('+\n++\n+++ Using model {}...'.format(model))
     click.secho('+\n++\n+++ Training for {} steps...'.format(steps))
     call = ['docker', 'exec', 'gpu_tensorflow', 'bash', '-c',
-	    'python notebook/{}.py --steps {}'.format(model, steps)]
+            'python notebook/{}.py --steps {}'.format(model, steps)]
     if fake:
         code = SUCCESS
     else:
         code = subprocess.call(call)
     if code == SUCCESS:
-        click.secho('Sucess training! Checkout the logs /results at data/loggy.logs', fg='green')
+        click.secho(
+            'Sucess training! Checkout the logs /results at data/loggy.logs', fg='green')
     else:
         click.secho('Failure training :(', fg='red')
     return code
