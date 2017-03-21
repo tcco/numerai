@@ -21,6 +21,10 @@ click.secho('>>> import models',
             fg='white')
 import models  # NOQA
 
+click.secho('>>> import notebook',
+            fg='white')
+import notebook # NOQA
+
 # Tensorflow
 click.secho('>>> import tensorflow as tf',
             fg='white')

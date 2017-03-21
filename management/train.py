@@ -62,7 +62,7 @@ def bootup(model, fake):
         click.secho(
             '+\n++\n+++ That did not work.... Lets try the old-school way...')
         call = ['sudo', 'nvidia-docker', 'run', '-tid', '--name=gpu_tensorflow',
-                '-e', 'PASSWORD=Pinncode206', '-p', '8754:8888', '-p', '6006:600',
+                '-e', 'PASSWORD=Pinncode206', '-p', '8754:8888', '-p', '6006:6006',
                 '-v', '/home/ubuntu/numerai:/notebooks', 'tensorflow/tensorflow:latest-gpu']
         code = subprocess.call(call)
         if code == SUCCESS:
@@ -117,7 +117,7 @@ def _train(model, steps, fake):
     return code
 
 
-def shutdown(model, fake):
+def shutdown(fake):
     """Shutdown computer."""
     click.secho('Cleaning checkpoint folder...', fg='red')
     call = ['./manage', 'clean']

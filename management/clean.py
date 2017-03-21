@@ -23,7 +23,7 @@ def clean(folder):
     click.secho("+\n++\n+++ Cleaning checkpoint folder {}...".format(folder))
     evals(folder)
     events(folder)
-    meta(folder)
+    # meta(folder)
 
 
 def evals(folder):
